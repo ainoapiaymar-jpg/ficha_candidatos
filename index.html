@@ -113,6 +113,10 @@
   .btn.primary:hover{background:var(--blue-dark);border-color:var(--blue-dark)}
   .btn.text{padding:0 10px;border-color:transparent;background:transparent;color:var(--ink)}
   .btn.text:hover{border-color:transparent}
+  /* Acciones que borran (Limpiar, Eliminar): hover en rojo muy suave, tinte de `red` */
+  .btn.text.danger:hover{background:rgba(255,0,89,.08);color:var(--ink)}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.text.danger:hover{background:rgba(255,0,89,.18)}}
+  :root[data-theme="dark"] .btn.text.danger:hover{background:rgba(255,0,89,.18)}
   .btn.text:hover{background:var(--green);color:var(--navy)}
   .btn:focus-visible,.add button:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
   .add{display:flex;gap:8px;margin-top:10px}
@@ -250,7 +254,7 @@
     <div class="actions">
       <button type="button" class="btn primary" id="copy">Copiar ficha</button>
       <button type="button" class="btn" id="pdf">Guardar PDF</button>
-      <button type="button" class="btn text" id="reset">Limpiar</button>
+      <button type="button" class="btn text danger" id="reset">Limpiar</button>
       <span class="toast" id="toast" role="status"></span>
     </div>
   </aside>
@@ -1882,7 +1886,7 @@ function renderCustomSection(cs){
   const sec = el("section",{class:"block"});
   const head = el("div",{class:"sec-head"});
   head.append(el("h2",{},cs.title));
-  const del = el("button",{type:"button",class:"btn text"},"Eliminar sección");
+  const del = el("button",{type:"button",class:"btn text danger"},"Eliminar sección");
   del.onclick=()=>{ customSections = customSections.filter(s=>s.id!==cs.id); render(); };
   head.append(del);
   sec.append(head);
@@ -1893,7 +1897,7 @@ function renderCustomSection(cs){
     const row = el("div",{class:"sub-head"});
     const lab = el("label",{class:"t"},sub.title);
     lab.append(el("small",{},"selección múltiple"));
-    const rm = el("button",{type:"button",class:"btn text","aria-label":`Eliminar subsección ${sub.title}`},"Eliminar");
+    const rm = el("button",{type:"button",class:"btn text danger","aria-label":`Eliminar subsección ${sub.title}`},"Eliminar");
     rm.onclick=()=>{ cs.subs = cs.subs.filter(x=>x.id!==sub.id); render(); };
     row.append(lab, rm);
     f.append(row);
