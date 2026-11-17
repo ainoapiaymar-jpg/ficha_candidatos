@@ -176,6 +176,11 @@
   /* Secciones personalizadas */
   .sec-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
   .sec-head h2{margin:0!important}
+  .sub-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+  .sub-head label.t{margin-bottom:0}
+  .sub-field{padding-top:0;border-top:0}
+  .add-sub{padding-top:16px;border-top:1px solid var(--border)}
+  .sec-head + .sub-field,.sec-head + .add-sub{padding-top:0;border-top:0}
   .btn.add-section{width:100%;margin-bottom:16px}
   .add-section-form .row{display:flex;gap:6px;flex-wrap:wrap}
   .add-section-form input{flex:1;min-width:200px}
@@ -1882,13 +1887,45 @@ function renderCustomSection(cs){
   head.append(del);
   sec.append(head);
 
-  const wrap = el("div",{class:"field"});
-  const p = el("div",{class:"pills"});
-  cs.custom.forEach(o=>p.append(pill(cs,o,true,true)));
-  if(!cs.custom.length) p.append(el("span",{class:"hint"},"Añade los tags de esta sección."));
-  wrap.append(p);
-  wrap.append(addControl(cs, ()=>[], true, "Añadir tag…", cs.title));
-  sec.append(wrap);
+  /* La sección solo aloja subsecciones; los tags van dentro de cada subsección */
+  (cs.subs||[]).forEach(sub=>{
+    const f = el("div",{class:"field sub-field"});
+    const row = el("div",{class:"sub-head"});
+    const lab = el("label",{class:"t"},sub.title);
+    lab.append(el("small",{},"selección múltiple"));
+    const rm = el("button",{type:"button",class:"btn text","aria-label":`Eliminar subsección ${sub.title}`},"Eliminar");
+    rm.onclick=()=>{ cs.subs = cs.subs.filter(x=>x.id!==sub.id); render(); };
+    row.append(lab, rm);
+    f.append(row);
+    const sp = el("div",{class:"pills"});
+    sub.custom.forEach(o=>sp.append(pill(sub,o,true,true)));
+    if(!sub.custom.length) sp.append(el("span",{class:"hint"},"Añade los tags de esta subsección."));
+    f.append(sp);
+    f.append(addControl(sub, ()=>[], true, "Añadir tag…", sub.title));
+    sec.append(f);
+  });
+
+  const nf = el("div",{class:"field add-sub"});
+  const nid = "new-sub-"+cs.id;
+  nf.append(el("label",{class:"t",for:nid},"Nueva subsección"));
+  const nrow = el("div",{class:"add"});
+  const ninp = el("input",{type:"text",id:nid,placeholder:"Título de la subsección…"});
+  const nbtn = el("button",{type:"button"},"+ Añadir subsección");
+  const nerr = el("div",{class:"error",role:"alert"});
+  const createSub = ()=>{
+    const t = ninp.value.trim();
+    if(!t){ nerr.textContent = "Escribe un título para la subsección."; ninp.setAttribute("aria-invalid","true"); ninp.focus(); return; }
+    cs.subs = cs.subs || [];
+    cs.subs.push({ id: ++sectionSeq, title:t, custom:[], sel:new Set() });
+    render();
+    setTimeout(()=>document.getElementById(nid)?.focus(),0);
+  };
+  nbtn.onclick = createSub;
+  ninp.onkeydown = e=>{ if(e.key==="Enter"){ e.preventDefault(); createSub(); } };
+  nrow.append(ninp, nbtn);
+  nf.append(nrow, nerr);
+  if(!(cs.subs||[]).length) nf.append(el("div",{class:"hint"},"Crea una subsección para añadir sus tags."));
+  sec.append(nf);
   return sec;
 }
 
@@ -1909,7 +1946,7 @@ function renderAddSection(){
   const create = ()=>{
     const t = inp.value.trim();
     if(!t){ err.textContent = "Escribe un título para la sección."; inp.setAttribute("aria-invalid","true"); inp.focus(); return; }
-    customSections.push({ id: ++sectionSeq, title:t, custom:[], sel:new Set() });
+    customSections.push({ id: ++sectionSeq, title:t, custom:[], sel:new Set(), subs:[] });
     addingSection = false; render();
   };
   ok.onclick=create;
@@ -1946,10 +1983,12 @@ function model(){
     title:s.title,
     items:s.fields.map(f=>({ label:labelFor(f), value:fieldValue(f) }))
   }));
-  customSections.forEach(cs=>out.push({
-    title:cs.title,
-    items:[{ label:null, value:[...cs.sel].join(", ") }]
-  }));
+  customSections.forEach(cs=>{
+    const subs = cs.subs || [];
+    const items = subs.map(sub=>({ label:sub.title, value:[...sub.sel].join(", ") }));
+    if(!items.length) items.push({ label:null, value:"" });
+    out.push({ title:cs.title, items });
+  });
   return out;
 }
 
